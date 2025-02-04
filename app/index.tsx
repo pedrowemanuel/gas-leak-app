@@ -1,6 +1,6 @@
 import { Text } from "@/components/text";
 import { Colors } from "@/constants/colors";
-import { SSID_PREFIX } from "@/constants/ssid-sensor-prefix";
+import { SSID_PREFIX } from "@/constants/sensor-ap";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Button, StyleSheet, View } from "react-native";
 import { PermissionsAndroid } from "react-native";
@@ -87,6 +87,7 @@ export default function Index() {
   const saveCredentials = async (ssid: string) => {
     try {
       await AsyncStorage.setItem(SSID_LAST_CONNECT_KEY, ssid);
+      console.log({ ssid });
     } catch (e) {
       console.log(e);
     }
