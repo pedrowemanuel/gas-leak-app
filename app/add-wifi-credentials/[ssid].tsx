@@ -1,8 +1,10 @@
 import Input from "@/components/input";
 import { Text } from "@/components/text";
 import { Colors } from "@/constants/colors";
-import { useNavigation, useRouter } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import TetheringManager from "@react-native-tethering/wifi";
+
 import {
   ActivityIndicator,
   Alert,
@@ -10,22 +12,18 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import WifiManager from "react-native-wifi-reborn";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   PASS_LAST_CONNECT_KEY,
   SSID_LAST_CONNECT_KEY,
 } from "@/constants/storage-keys";
-import submitWifiCredentials from "@/services/sensor-web-server";
-
-interface WifiCredentials {
-  ssid: string;
-  pass: string;
-}
+import { saveCredentials, saveSensor } from "@/services/data";
+import { submitWifiCredentials } from "@/services/sensor-web-server";
 
 export default function AddWifiCredentials() {
-  const [currentSSID, setCurrentSSID] = useState("");
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const { ssid } = useLocalSearchParams<{ ssid: string }>();
 
   const [credentials, setCredentials] = useState<WifiCredentials>({
     ssid: "",
@@ -35,16 +33,6 @@ export default function AddWifiCredentials() {
   const route = useNavigation();
   const navigation = useRouter();
 
-  const getCurrentCredentials = async () => {
-    try {
-      const ssid = await WifiManager.getCurrentWifiSSID();
-      return ssid;
-    } catch (error) {
-      console.log(error);
-      return "";
-    }
-  };
-
   const init = async () => {
     route.setOptions({ title: "Adicione uma rede Wi-fi" });
 
@@ -52,8 +40,6 @@ export default function AddWifiCredentials() {
 
     setState("ssid", (await AsyncStorage.getItem(SSID_LAST_CONNECT_KEY)) || "");
     setState("pass", (await AsyncStorage.getItem(PASS_LAST_CONNECT_KEY)) || "");
-
-    setCurrentSSID(await getCurrentCredentials());
 
     setLoading(false);
   };
@@ -65,17 +51,6 @@ export default function AddWifiCredentials() {
     });
   };
 
-  const saveCredentials = async (credentials: WifiCredentials) => {
-    try {
-      await AsyncStorage.setItem(SSID_LAST_CONNECT_KEY, credentials.ssid);
-      await AsyncStorage.setItem(PASS_LAST_CONNECT_KEY, credentials.pass);
-
-      console.log("Saved credentials success!");
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
   const send = async () => {
     if (credentials.ssid === "" || credentials.pass === "") {
       Alert.alert(
@@ -85,15 +60,33 @@ export default function AddWifiCredentials() {
       return;
     }
 
+    setTimeout(() => {
+      setSending(true);
+    });
+
     await saveCredentials(credentials);
 
-    const response = await submitWifiCredentials(credentials);
+    await TetheringManager.connectToNetwork({
+      ssid,
+      password: "",
+      isHidden: false,
+    }).then(async () => {
+      const response = await submitWifiCredentials(credentials);
 
-    if (response !== null && response.status === 200) {
-      Alert.alert("Sensor configurado com sucesso", "IP: " + response.data, [
-        { text: "OK", onPress: () => navigation.back() },
-      ]);
-    }
+      if (response !== null) {
+        await saveSensor({
+          ip: response,
+          ssid: ssid,
+          lastCommunication: String(new Date()),
+        });
+
+        Alert.alert("Sensor configurado com sucesso", "IP: " + response, [
+          { text: "OK", onPress: () => navigation.back() },
+        ]);
+      }
+    });
+
+    setSending(false);
   };
 
   useEffect(() => {
@@ -140,7 +133,11 @@ export default function AddWifiCredentials() {
               onChangeText={(text) => setState("pass", text)}
             />
           </View>
-          <Button title="Enviar" onPress={send} />
+          {sending ? (
+            <ActivityIndicator size="large" color={Colors.primary} />
+          ) : (
+            <Button title="Enviar" onPress={send} />
+          )}
         </View>
       </View>
     </View>

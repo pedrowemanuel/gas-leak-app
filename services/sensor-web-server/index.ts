@@ -1,30 +1,42 @@
 import { SENSOR_AP_IP } from "@/constants/sensor-ap";
+import { Command } from "@/types/command";
 import axios, { AxiosResponse } from "axios";
+import { Alert } from "react-native";
 
-interface WifiCredentials {
-  ssid: string;
-  pass: string;
-  ip?: string;
-  gateway?: string;
-}
-
-const submitWifiCredentials = async (
-  credentials: WifiCredentials
-): Promise<AxiosResponse<string> | null> => {
+export const submitWifiCredentials = async (credentials: WifiCredentials) => {
   try {
-    const response = await axios.post(`http://${SENSOR_AP_IP}`, {
-      ssid: credentials.ssid,
-      pass: credentials.pass,
-      ip: credentials.ip || "192.168.1.200",
-      gateway: credentials.gateway || "192.168.1.1",
+    const formData = new FormData();
+    formData.append("ssid", credentials.ssid);
+    formData.append("pass", credentials.pass);
+    formData.append("ip", credentials.ip || "192.168.1.200");
+    formData.append("gateway", credentials.gateway || "192.168.1.1");
+
+    const response = await fetch(`http://${SENSOR_AP_IP}/`, {
+      method: "POST",
+      body: formData,
+      headers: { "Content-Type": "multipart/form-data" },
     });
 
-    return response;
+    return await response.text();
   } catch (error) {
-    console.error("Error submitting WiFi credentials:", error);
-
+    Alert.alert("Falha ao enviar as credenciais", String(error));
     return null;
   }
 };
 
-export default submitWifiCredentials;
+export const sendCommand = async (
+  sensor: Sensor,
+  command: Command
+): Promise<AxiosResponse<string> | null> => {
+  try {
+    const response = await axios.get(`http://${sensor.ip}/${command}`, {
+      timeout: 10000,
+    });
+
+    return response;
+  } catch (error) {
+    Alert.alert("Falha ao enviar o comando", String(error));
+
+    return null;
+  }
+};

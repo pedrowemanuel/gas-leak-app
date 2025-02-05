@@ -1,20 +1,29 @@
 import { Text } from "@/components/text";
 import { Colors } from "@/constants/colors";
 import { SSID_PREFIX } from "@/constants/sensor-ap";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Button, StyleSheet, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Button,
+  StyleSheet,
+  View,
+} from "react-native";
 import { PermissionsAndroid } from "react-native";
 import WifiManager from "react-native-wifi-reborn";
-import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SSID_LAST_CONNECT_KEY } from "@/constants/storage-keys";
+import TetheringManager from "@react-native-tethering/wifi";
+
+import { router, useRouter } from "expo-router";
+import { getSensors, saveCredentials } from "@/services/data";
+import SensorList from "@/components/sensor-list";
 
 export default function Index() {
   const [locationGrated, setLocationGrated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cancelSearch, setCancelSearch] = useState(false);
+  const [sensors, setSensors] = useState<Sensor[]>([]);
   const [currentSSID, setCurrentSSID] = useState("");
-  const router = useRouter();
+  const logs = useRef("");
 
   const requestLocationPermission = async () => {
     const permissionLocation = await PermissionsAndroid.check(
@@ -40,11 +49,24 @@ export default function Index() {
     return true;
   };
 
-  const searchSensor = async (time: number = 30000) => {
-    console.log({ time });
+  const navigateToAddCredentialsScreen = (ssid: string) => {
+    setTimeout(() => {
+      setLoading(false);
+    });
 
+    router.push(`/add-wifi-credentials/${ssid}`);
+  };
+
+  const searchSensor = async (time: number = 30000) => {
     if (time <= 0) {
       setLoading(false);
+      return;
+    }
+
+    const ssidConnect = await getCredentials();
+
+    if (ssidConnect.includes(SSID_PREFIX)) {
+      navigateToAddCredentialsScreen(ssidConnect);
       return;
     }
 
@@ -53,20 +75,24 @@ export default function Index() {
     });
 
     try {
-      // await WifiManager.connectToProtectedSSIDPrefix(SSID_PREFIX, "", true);
+      const networks = await TetheringManager.getWifiNetworks();
 
-      const ssidConnect = await getCredentials();
-      if (ssidConnect.includes(SSID_PREFIX)) {
-        console.log(ssidConnect);
+      const network = networks.find((network) =>
+        network.ssid.includes(SSID_PREFIX)
+      );
 
-        setTimeout(() => {
-          setLoading(false);
-        });
+      if (network) {
+        navigateToAddCredentialsScreen(network.ssid);
 
-        router.push("/add-wifi-credentials");
+        return;
       }
+
+      setTimeout(() => {
+        searchSensor(time - 1000);
+      }, 1000);
     } catch (error) {
       console.log(error);
+      logs.current = logs.current + "\n" + String(error);
 
       setTimeout(() => {
         searchSensor(time - 1000);
@@ -84,15 +110,6 @@ export default function Index() {
     }
   };
 
-  const saveCredentials = async (ssid: string) => {
-    try {
-      await AsyncStorage.setItem(SSID_LAST_CONNECT_KEY, ssid);
-      console.log({ ssid });
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
   const initApp = async () => {
     const granted = await requestLocationPermission();
 
@@ -104,9 +121,11 @@ export default function Index() {
       setCurrentSSID(ssid);
 
       if (ssid !== "" && !ssid.includes(SSID_PREFIX)) {
-        saveCredentials(ssid);
+        saveCredentials({ ssid, pass: "" });
       }
     }
+
+    setSensors(await getSensors());
   };
 
   useEffect(() => {
@@ -163,15 +182,30 @@ export default function Index() {
           >
             Sensores salvos
           </Text>
+          <SensorList sensors={sensors} />
         </View>
       </View>
 
       <Button
         title="Procurar sensor"
-        onPress={() => {
-          setCancelSearch(false);
+        onPress={async () => {
+          logs.current = "";
 
-          searchSensor();
+          await searchSensor();
+
+          if (logs.current !== "") {
+            Alert.alert(
+              "Não foi possível se conectar ao dispositivo",
+              logs.current,
+              [
+                {
+                  onPress() {
+                    TetheringManager.openWifiSettings(true);
+                  },
+                },
+              ]
+            );
+          }
         }}
       />
     </View>
@@ -190,7 +224,7 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "white",
     borderRadius: 10,
-    height: 100,
+    minHeight: 100,
     padding: 15,
     gap: 2,
   },
