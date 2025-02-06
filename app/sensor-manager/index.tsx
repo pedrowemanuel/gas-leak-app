@@ -1,8 +1,8 @@
 import Input from "@/components/input";
 import { Text } from "@/components/text";
 import { Colors } from "@/constants/colors";
-import { removeSensor } from "@/services/data";
-import { sendCommand } from "@/services/sensor-web-server";
+import { removeSensor, updateSensor } from "@/services/data";
+import { initCommunication, sendCommand } from "@/services/sensor-web-server";
 import { Command } from "@/types/command";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -24,8 +24,7 @@ export default function SensorManager() {
   const navigation = useRouter();
 
   const init = async () => {
-    route.setOptions({ title: "Sensor:" + params.ssid });
-
+    route.setOptions({ title: "Sensor: " + params.ssid });
     // @ts-ignore
     setSensor({ ...params });
   };
@@ -42,7 +41,13 @@ export default function SensorManager() {
       setSending(true);
     });
 
-    await sendCommand(sensor, command);
+    await initCommunication(sensor);
+
+    const response = await sendCommand(sensor, command);
+
+    if (response) {
+      await updateSensor({ ...sensor, lastCommunication: String(new Date()) });
+    }
 
     setSending(false);
   };
@@ -83,6 +88,13 @@ export default function SensorManager() {
               <Text style={styles.label}>IP</Text>
               <Text style={{ fontSize: 28, fontWeight: "200" }}>
                 {sensor.ip}
+              </Text>
+            </View>
+
+            <View>
+              <Text style={styles.label}>MAC</Text>
+              <Text style={{ fontSize: 28, fontWeight: "200" }}>
+                {sensor.mac}
               </Text>
             </View>
 

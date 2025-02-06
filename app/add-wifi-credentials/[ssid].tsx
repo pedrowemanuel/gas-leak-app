@@ -18,7 +18,15 @@ import {
   SSID_LAST_CONNECT_KEY,
 } from "@/constants/storage-keys";
 import { saveCredentials, saveSensor } from "@/services/data";
-import { submitWifiCredentials } from "@/services/sensor-web-server";
+import {
+  restartServer,
+  submitWifiCredentials,
+} from "@/services/sensor-web-server";
+
+function getNumbersAfterColon(str: string) {
+  const match = str.match(/:(\d+)/);
+  return match ? match[1] : "200";
+}
 
 export default function AddWifiCredentials() {
   const [loading, setLoading] = useState(true);
@@ -28,6 +36,8 @@ export default function AddWifiCredentials() {
   const [credentials, setCredentials] = useState<WifiCredentials>({
     ssid: "",
     pass: "",
+    ip: `192.168.1.${getNumbersAfterColon(ssid)}`,
+    gateway: "192.168.1.1",
   });
 
   const route = useNavigation();
@@ -36,13 +46,19 @@ export default function AddWifiCredentials() {
   const init = async () => {
     route.setOptions({ title: "Adicione uma rede Wi-fi" });
 
-    console.log(await AsyncStorage.getItem(SSID_LAST_CONNECT_KEY));
-
     setState("ssid", (await AsyncStorage.getItem(SSID_LAST_CONNECT_KEY)) || "");
     setState("pass", (await AsyncStorage.getItem(PASS_LAST_CONNECT_KEY)) || "");
 
     setLoading(false);
   };
+
+  function delay(ms: number) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(true);
+      }, ms);
+    });
+  }
 
   const setState = (key: keyof WifiCredentials, value: string) => {
     setCredentials((prev) => {
@@ -66,25 +82,26 @@ export default function AddWifiCredentials() {
 
     await saveCredentials(credentials);
 
-    await TetheringManager.connectToNetwork({
+    await TetheringManager.connectToLocalNetwork({
       ssid,
       password: "",
       isHidden: false,
-    }).then(async () => {
-      const response = await submitWifiCredentials(credentials);
-
-      if (response !== null) {
-        await saveSensor({
-          ip: response,
-          ssid: ssid,
-          lastCommunication: String(new Date()),
-        });
-
-        Alert.alert("Sensor configurado com sucesso", "IP: " + response, [
-          { text: "OK", onPress: () => navigation.back() },
-        ]);
-      }
     });
+
+    const mac = await submitWifiCredentials(credentials);
+
+    await restartServer();
+
+    await saveSensor({
+      ip: credentials.ip ?? "",
+      ssid: ssid,
+      lastCommunication: String(new Date()),
+      mac: mac ?? "",
+    });
+
+    Alert.alert("Sensor salvo com sucesso", "", [
+      { text: "OK", onPress: () => navigation.back() },
+    ]);
 
     setSending(false);
   };
@@ -131,6 +148,20 @@ export default function AddWifiCredentials() {
               secureTextEntry
               value={credentials.pass}
               onChangeText={(text) => setState("pass", text)}
+            />
+
+            <Input
+              label="IP"
+              placeholder="192.168.1.[200-205]"
+              value={credentials.ip}
+              onChangeText={(text) => setState("ip", text)}
+            />
+
+            <Input
+              label="Gateway"
+              placeholder="Digite aqui ..."
+              value={credentials.gateway}
+              onChangeText={(text) => setState("gateway", text)}
             />
           </View>
           {sending ? (

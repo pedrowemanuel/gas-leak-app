@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.gasleakapp'
+    namespace 'com.prodrigues.gasleakapp'
     defaultConfig {
-        applicationId 'com.anonymous.gasleakapp'
+        applicationId 'com.prodrigues.gasleakapp'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

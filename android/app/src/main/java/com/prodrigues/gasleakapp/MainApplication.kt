@@ -1,4 +1,4 @@
-package com.anonymous.gasleakapp
+package com.prodrigues.gasleakapp
 
 import android.app.Application
 import android.content.res.Configuration

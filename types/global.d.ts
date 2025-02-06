@@ -9,4 +9,5 @@ interface Sensor {
   ssid: string;
   ip: string;
   lastCommunication: string;
+  mac?: string;
 }

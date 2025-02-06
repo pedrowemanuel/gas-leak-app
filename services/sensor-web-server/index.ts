@@ -1,6 +1,5 @@
 import { SENSOR_AP_IP } from "@/constants/sensor-ap";
 import { Command } from "@/types/command";
-import axios, { AxiosResponse } from "axios";
 import { Alert } from "react-native";
 
 export const submitWifiCredentials = async (credentials: WifiCredentials) => {
@@ -19,7 +18,32 @@ export const submitWifiCredentials = async (credentials: WifiCredentials) => {
 
     return await response.text();
   } catch (error) {
-    Alert.alert("Falha ao enviar as credenciais", String(error));
+    console.log("Falha ao enviar as credenciais" + String(error));
+
+    return null;
+  }
+};
+
+export const initCommunication = async (
+  sensor: Sensor
+): Promise<Response | null> => {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+
+    const response = await fetch(`http://${sensor.ip}/`, {
+      method: "GET",
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status}`);
+    }
+
+    return response;
+  } catch (error) {
     return null;
   }
 };
@@ -27,16 +51,38 @@ export const submitWifiCredentials = async (credentials: WifiCredentials) => {
 export const sendCommand = async (
   sensor: Sensor,
   command: Command
-): Promise<AxiosResponse<string> | null> => {
+): Promise<Response | null> => {
   try {
-    const response = await axios.get(`http://${sensor.ip}/${command}`, {
-      timeout: 10000,
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(`http://${sensor.ip}/${command}`, {
+      method: "GET",
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status}`);
+    }
 
     return response;
   } catch (error) {
-    Alert.alert("Falha ao enviar o comando", String(error));
-
+    Alert.alert(
+      "Por favor, aguarde um momento e tente novamente",
+      String(error)
+    );
     return null;
+  }
+};
+
+export const restartServer = async () => {
+  try {
+    await fetch(`http://${SENSOR_AP_IP}/restart`, {
+      method: "GET",
+    });
+  } catch (error) {
+    console.log("Falha" + String(error));
   }
 };

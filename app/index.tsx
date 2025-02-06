@@ -1,7 +1,7 @@
 import { Text } from "@/components/text";
 import { Colors } from "@/constants/colors";
 import { SSID_PREFIX } from "@/constants/sensor-ap";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,16 +13,16 @@ import { PermissionsAndroid } from "react-native";
 import WifiManager from "react-native-wifi-reborn";
 import TetheringManager from "@react-native-tethering/wifi";
 
-import { router, useRouter } from "expo-router";
+import { router, useFocusEffect, useRouter } from "expo-router";
 import { getSensors, saveCredentials } from "@/services/data";
 import SensorList from "@/components/sensor-list";
 
 export default function Index() {
   const [locationGrated, setLocationGrated] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [cancelSearch, setCancelSearch] = useState(false);
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [currentSSID, setCurrentSSID] = useState("");
+  const [currentIP, setCurrentIP] = useState("");
   const logs = useRef("");
 
   const requestLocationPermission = async () => {
@@ -60,10 +60,19 @@ export default function Index() {
   const searchSensor = async (time: number = 30000) => {
     if (time <= 0) {
       setLoading(false);
+
+      Alert.alert("Nenhum dispositivo encontrado", logs.current, [
+        {
+          onPress() {
+            setLoading(false);
+          },
+        },
+      ]);
+
       return;
     }
 
-    const ssidConnect = await getCredentials();
+    const ssidConnect = await getCurrentSSID();
 
     if (ssidConnect.includes(SSID_PREFIX)) {
       navigateToAddCredentialsScreen(ssidConnect);
@@ -100,10 +109,27 @@ export default function Index() {
     }
   };
 
-  const getCredentials = async () => {
+  const getCurrentSSID = async () => {
     try {
       const ssid = await WifiManager.getCurrentWifiSSID();
+      if (!ssid) {
+        TetheringManager.openWifiSettings(true);
+
+        return await WifiManager.getCurrentWifiSSID();
+      }
+
       return ssid;
+    } catch (error) {
+      console.log(error);
+      return "";
+    }
+  };
+
+  const getCurrentIP = async () => {
+    try {
+      const ip = await WifiManager.getIP();
+
+      return ip;
     } catch (error) {
       console.log(error);
       return "";
@@ -116,9 +142,11 @@ export default function Index() {
     setLocationGrated(granted);
 
     if (granted) {
-      const ssid = await getCredentials();
+      const ssid = await getCurrentSSID();
+      const ip = await getCurrentIP();
 
       setCurrentSSID(ssid);
+      setCurrentIP(ip);
 
       if (ssid !== "" && !ssid.includes(SSID_PREFIX)) {
         saveCredentials({ ssid, pass: "" });
@@ -127,6 +155,14 @@ export default function Index() {
 
     setSensors(await getSensors());
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log("A tela foi focada!");
+
+      initApp();
+    }, [])
+  );
 
   useEffect(() => {
     initApp();
@@ -174,6 +210,16 @@ export default function Index() {
           <Text style={{ fontSize: 28, fontWeight: "200" }}>
             {currentSSID || "Sem conexão"}
           </Text>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: "200",
+              color: Colors.primary,
+              fontStyle: "italic",
+            }}
+          >
+            IP: {currentIP || ""}
+          </Text>
         </View>
 
         <View style={styles.box}>
@@ -192,20 +238,6 @@ export default function Index() {
           logs.current = "";
 
           await searchSensor();
-
-          if (logs.current !== "") {
-            Alert.alert(
-              "Não foi possível se conectar ao dispositivo",
-              logs.current,
-              [
-                {
-                  onPress() {
-                    TetheringManager.openWifiSettings(true);
-                  },
-                },
-              ]
-            );
-          }
         }}
       />
     </View>

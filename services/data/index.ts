@@ -63,3 +63,20 @@ export const removeSensor = async (sensorIp: string) => {
     Alert.alert("Ocorreu um problema ao remover o sensor", String(e));
   }
 };
+
+export const updateSensor = async (updatedSensor: Sensor) => {
+  try {
+    const sensors = await getSensors();
+
+    const updatedSensors = sensors.map((sensor) =>
+      sensor.ip === updatedSensor.ip ? updatedSensor : sensor
+    );
+
+    await AsyncStorage.setItem(
+      SAVED_SENSORS_KEY,
+      JSON.stringify(updatedSensors)
+    );
+  } catch (e) {
+    Alert.alert("Ocorreu um problema ao atualizar o sensor", String(e));
+  }
+};

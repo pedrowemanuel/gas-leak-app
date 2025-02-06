@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'gas-leak-app'
+rootProject.name = 'Sensor de Gás App'
 
 dependencyResolutionManagement {
   versionCatalogs {

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "gas-leak-app",
-    "slug": "gas-leak-app",
+    "name": "Sensor de Gás App",
+    "slug": "gasleakapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -13,14 +13,14 @@
         "NSLocalNetworkUsageDescription": "The app requires access to the local network so it can..."
       },
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.gasleakapp"
+      "bundleIdentifier": "com.prodrigues.gasleakapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.gasleakapp",
+      "package": "com.prodrigues.gasleakapp",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_NETWORK_STATE",

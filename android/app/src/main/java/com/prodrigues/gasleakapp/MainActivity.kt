@@ -1,4 +1,4 @@
-package com.anonymous.gasleakapp
+package com.prodrigues.gasleakapp
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
