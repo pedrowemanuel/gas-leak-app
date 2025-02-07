@@ -2,10 +2,14 @@
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">192.168.4.1</domain>
-        <domain includeSubdomains="true">192.168.1.200</domain>
+        <domain includeSubdomains="true">192.168.4.200</domain>
+        <domain includeSubdomains="true">192.168.4.201</domain>
+        <domain includeSubdomains="true">192.168.4.202</domain>
+        <domain includeSubdomains="true">192.168.4.203</domain>
+        <domain includeSubdomains="true">192.168.4.204</domain>
         <domain includeSubdomains="true">192.168.1.201</domain>
         <domain includeSubdomains="true">192.168.1.202</domain>
         <domain includeSubdomains="true">192.168.1.203</domain>
-        <domain includeSubdomains="true">192.168.1.205</domain>
+        <domain includeSubdomains="true">192.168.1.204</domain>
     </domain-config>
 </network-security-config>

@@ -37,6 +37,7 @@ export default function AddWifiCredentials() {
     ssid: "",
     pass: "",
     ip: `192.168.1.${getNumbersAfterColon(ssid)}`,
+    websocketIP: `192.168.4.${getNumbersAfterColon(ssid)}`,
     gateway: "192.168.1.1",
   });
 
@@ -97,9 +98,10 @@ export default function AddWifiCredentials() {
       ssid: ssid,
       lastCommunication: String(new Date()),
       mac: mac ?? "",
+      websocketIP: credentials.websocketIP ?? "",
     });
 
-    Alert.alert("Sensor salvo com sucesso", "", [
+    Alert.alert("Sensor salvo com sucesso", "MAC: " + mac, [
       { text: "OK", onPress: () => navigation.back() },
     ]);
 
