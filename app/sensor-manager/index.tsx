@@ -60,7 +60,15 @@ export default function SensorManager() {
 
         websocket.onmessage = (event) => {
           console.log("Mensagem do ESP32:", event.data);
-          setResponseSensor(event.data);
+
+          if (event.data === "0") {
+            Alert.alert(
+              "Alarme disparado!",
+              "Sensor detectou um vazamento de gás!"
+            );
+          } else {
+            setResponseSensor(event.data);
+          }
         };
 
         websocket.onerror = (error: any) => {
@@ -169,9 +177,9 @@ export default function SensorManager() {
 
               {responseSensor !== "" && (
                 <View>
-                  <Text style={styles.label}>Sensor de Gás/Fumaça</Text>
+                  <Text style={styles.label}>Mensagem recebida</Text>
                   <Text style={{ fontSize: 24, fontWeight: "400" }}>
-                    {responseSensor} ppm
+                    {responseSensor}
                   </Text>
                 </View>
               )}

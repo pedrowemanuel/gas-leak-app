@@ -2,8 +2,8 @@ interface WifiCredentials {
   ssid: string;
   pass: string;
   ip?: string;
-  gateway?: string;
   websocketIP?: string;
+  telegramToken?: string;
 }
 
 interface Sensor {
@@ -12,4 +12,5 @@ interface Sensor {
   websocketIP: string;
   lastCommunication: string;
   mac?: string;
+  telegramToken?: string;
 }

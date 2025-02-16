@@ -38,28 +38,20 @@ export default function AddWifiCredentials() {
     pass: "",
     ip: `192.168.1.${getNumbersAfterColon(ssid)}`,
     websocketIP: `192.168.4.${getNumbersAfterColon(ssid)}`,
-    gateway: "192.168.1.1",
+    telegramToken: "",
   });
 
   const route = useNavigation();
   const navigation = useRouter();
 
   const init = async () => {
-    route.setOptions({ title: "Adicione uma rede Wi-fi" });
+    route.setOptions({ title: "Configure o sensor" });
 
     setState("ssid", (await AsyncStorage.getItem(SSID_LAST_CONNECT_KEY)) || "");
     setState("pass", (await AsyncStorage.getItem(PASS_LAST_CONNECT_KEY)) || "");
 
     setLoading(false);
   };
-
-  function delay(ms: number) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(true);
-      }, ms);
-    });
-  }
 
   const setState = (key: keyof WifiCredentials, value: string) => {
     setCredentials((prev) => {
@@ -99,6 +91,7 @@ export default function AddWifiCredentials() {
       lastCommunication: String(new Date()),
       mac: mac ?? "",
       websocketIP: credentials.websocketIP ?? "",
+      telegramToken: credentials.telegramToken,
     });
 
     Alert.alert("Sensor salvo com sucesso", "MAC: " + mac, [
@@ -160,10 +153,10 @@ export default function AddWifiCredentials() {
             />
 
             <Input
-              label="Gateway"
-              placeholder="Digite aqui ..."
-              value={credentials.gateway}
-              onChangeText={(text) => setState("gateway", text)}
+              label="Token Telegram Bot "
+              placeholder="Digite aqui o token de acesso ao seu Bot Telegram ..."
+              value={credentials.telegramToken}
+              onChangeText={(text) => setState("telegramToken", text)}
             />
           </View>
           {sending ? (

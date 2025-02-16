@@ -8,7 +8,10 @@ export const submitWifiCredentials = async (credentials: WifiCredentials) => {
     formData.append("ssid", credentials.ssid);
     formData.append("pass", credentials.pass);
     formData.append("ip", credentials.ip || "192.168.1.200");
-    formData.append("gateway", credentials.gateway || "192.168.1.1");
+    formData.append(
+      "telegramToken",
+      credentials.telegramToken || "192.168.1.1"
+    );
     formData.append("websocketIP", credentials.websocketIP || "192.168.4.200");
 
     const response = await fetch(`http://${SENSOR_AP_IP}/`, {
